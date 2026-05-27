@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Chấm điểm Phát âm tiếng Anh (Mỹ)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+        h2 { color: #333; }
+        .target-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #555;
+        }
+        .score {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+        .status { margin-top: 10px; font-style: italic; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Luyện Phát Âm Anh Mỹ</h2>
+    <p>Hãy đọc to câu dưới đây:</p>
+    <div class="target-text" id="targetText">The quick brown fox jumps over the lazy dog.</div>
+    
+    <button id="recordBtn">Bắt đầu Ghi âm</button>
+    <div class="status" id="statusText">Sẵn sàng</div>
+    
+    <div class="result" id="resultDiv" style="display: none;">
+        <p><strong>Bạn đã đọc:</strong> <span id="userSpeech"></span></p>
+        <div class="score" id="scoreDisplay"></div>
+    </div>
+</div>
+
+<script>
+    // Kiểm tra xem trình duyệt có hỗ trợ Web Speech API không
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+        alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Google Chrome.");
+    } else {
+        const recognition = new SpeechRecognition();
+        // Thiết lập ngôn ngữ là tiếng Anh Mỹ
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        const recordBtn = document.getElementById('recordBtn');
+        const statusText = document.getElementById('statusText');
+        const targetText = document.getElementById('targetText').innerText;
+        const resultDiv = document.getElementById('resultDiv');
+        const userSpeechDisplay = document.getElementById('userSpeech');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        recordBtn.addEventListener('click', () => {
+            recognition.start();
+            recordBtn.disabled = true;
+            recordBtn.innerText = "Đang nghe...";
+            statusText.innerText = "Hãy bắt đầu nói...";
+            resultDiv.style.display = "none";
+        });
+
+        // Xử lý khi có kết quả trả về
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            userSpeechDisplay.innerText = transcript;
+            
+            // Tính điểm
+            const score = calculateScore(targetText, transcript);
+            scoreDisplay.innerText = score + "/100 Điểm";
+            
+            if(score >= 80) {
+                scoreDisplay.style.color = "#27ae60"; // Xanh lá nếu điểm cao
+            } else {
+                scoreDisplay.style.color = "#e74c3c"; // Đỏ nếu điểm thấp
+            }
+            
+            resultDiv.style.display = "block";
+        };
+
+        recognition.onspeechend = () => {
+            recognition.stop();
+            resetButton();
+        };
+
+        recognition.onerror = (event) => {
+            statusText.innerText = "Lỗi nhận diện: " + event.error;
+            resetButton();
+        };
+
+        function resetButton() {
+            recordBtn.disabled = false;
+            recordBtn.innerText = "Bắt đầu Ghi âm";
+            statusText.innerText = "Sẵn sàng";
+        }
+
+        // Thuật toán chấm điểm cơ bản: So sánh số từ khớp nhau
+        function calculateScore(target, spoken) {
+            // Chuẩn hóa chuỗi (chuyển chữ thường, xóa dấu câu)
+            const cleanTarget = target.toLowerCase().replace(/[.,!?]/g, '').split(' ');
+            const cleanSpoken = spoken.toLowerCase().replace(/[.,!?]/g, '').split(' ');
+
+            let matchCount = 0;
+            cleanTarget.forEach(word => {
+                if (cleanSpoken.includes(word)) {
+                    matchCount++;
+                }
+            });
+
+            const rawScore = (matchCount / cleanTarget.length) * 100;
+            // Trả về số tròn, giới hạn tối đa 100
+            return Math.min(Math.round(rawScore), 100);
+        }
+    }
+</script>
+
+</body>
+</html>
