@@ -6,7 +6,7 @@
     <title>Ứng dụng Chấm điểm Phát âm tiếng Anh (Mỹ)</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
             display: flex;
             justify-content: center;
@@ -17,106 +17,197 @@
         .container {
             background-color: #fff;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 550px;
+            width: 100%;
             text-align: center;
         }
-        h2 { color: #333; }
-        .target-text {
-            font-size: 24px;
+        h2 { color: #2c3e50; margin-bottom: 5px; }
+        .progress {
+            font-size: 14px;
+            color: #7f8c8d;
             font-weight: bold;
-            color: #2c3e50;
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #e8f4f8;
-            border-radius: 5px;
+            margin-bottom: 15px;
         }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 24px;
+        .target-text {
+            font-size: 26px;
+            font-weight: bold;
+            color: #2980b9;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Cụm nút chuyển bài */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .nav-btn {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 8px 16px;
             border: none;
             border-radius: 5px;
-            font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover { background-color: #45a049; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        .result {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #555;
-        }
-        .score {
-            font-size: 32px;
             font-weight: bold;
-            color: #e74c3c;
-            margin-top: 10px;
+            transition: 0.2s;
         }
-        .status { margin-top: 10px; font-style: italic; color: #888; }
+        .nav-btn:hover { background-color: #bdc3c7; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Nút ghi âm chính */
+        .record-btn {
+            background-color: #e74c3c;
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(231, 76, 60, 0.3);
+            width: 80%;
+        }
+        .record-btn:hover { background-color: #c0392b; transform: translateY(-2px); }
+        .record-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; box-shadow: none; transform: none;}
+        
+        .result {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 18px;
+            color: #34495e;
+            display: none;
+        }
+        .user-speech { font-style: italic; color: #16a085; font-weight: 500; }
+        .score { font-size: 40px; font-weight: 900; margin-top: 15px; }
+        .status { margin-top: 15px; font-size: 14px; color: #95a5a6; height: 20px;}
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Luyện Phát Âm Anh Mỹ</h2>
-    <p>Hãy đọc to câu dưới đây:</p>
-    <div class="target-text" id="targetText">The quick brown fox jumps over the lazy dog.</div>
-    <div class="target-text" id="targetText"> I am the most handsome boy in the world.</div>
+    <div class="progress" id="progressText">Bài 1 / 5</div>
     
-    <button id="recordBtn">Bắt đầu Ghi âm</button>
+    <div class="target-text" id="targetText">Đang tải câu hỏi...</div>
+    
+    <div class="nav-buttons">
+        <button class="nav-btn" id="prevBtn">⬅ Câu trước</button>
+        <button class="nav-btn" id="nextBtn">Câu tiếp ➡</button>
+    </div>
+
+    <button class="record-btn" id="recordBtn">🎙️ Bắt đầu Ghi âm</button>
     <div class="status" id="statusText">Sẵn sàng</div>
     
-    <div class="result" id="resultDiv" style="display: none;">
-        <p><strong>Bạn đã đọc:</strong> <span id="userSpeech"></span></p>
+    <div class="result" id="resultDiv">
+        <p><strong>Bạn đã đọc:</strong> <br> <span class="user-speech" id="userSpeech"></span></p>
         <div class="score" id="scoreDisplay"></div>
     </div>
 </div>
 
 <script>
-    // Kiểm tra xem trình duyệt có hỗ trợ Web Speech API không
+    // ==========================================
+    // 1. DANH SÁCH BÀI TẬP (BẠN CÓ THỂ THÊM VÀO ĐÂY)
+    // ==========================================
+    const exercises = [
+        "The quick brown fox jumps over the lazy dog.",
+        "She sells seashells by the seashore.",
+        "A journey of a thousand miles begins with a single step.",
+        "Water boils at one hundred degrees Celsius.",
+        "I would like a cup of coffee and a piece of cake."
+    ];
+
+    let currentIndex = 0; // Biến theo dõi câu hiện tại
+
+    // Các phần tử giao diện
+    const targetTextEl = document.getElementById('targetText');
+    const progressTextEl = document.getElementById('progressText');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    const recordBtn = document.getElementById('recordBtn');
+    const statusText = document.getElementById('statusText');
+    const resultDiv = document.getElementById('resultDiv');
+    const userSpeechDisplay = document.getElementById('userSpeech');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+
+    // Hàm tải bài tập ra màn hình
+    function loadExercise(index) {
+        targetTextEl.innerText = exercises[index];
+        progressTextEl.innerText = `Bài ${index + 1} / ${exercises.length}`;
+        
+        // Ẩn bảng kết quả cũ đi khi chuyển câu mới
+        resultDiv.style.display = "none";
+        statusText.innerText = "Sẵn sàng";
+
+        // Vô hiệu hóa nút prev/next nếu ở đầu/cuối danh sách
+        prevBtn.disabled = index === 0;
+        nextBtn.disabled = index === exercises.length - 1;
+    }
+
+    // Khởi tạo bài đầu tiên khi mở web
+    loadExercise(currentIndex);
+
+    // Sự kiện nút Chuyển câu
+    prevBtn.addEventListener('click', () => {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadExercise(currentIndex);
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (currentIndex < exercises.length - 1) {
+            currentIndex++;
+            loadExercise(currentIndex);
+        }
+    });
+
+    // ==========================================
+    // 2. LOGIC GHI ÂM VÀ CHẤM ĐIỂM
+    // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Google Chrome.");
+        alert("Trình duyệt không hỗ trợ. Vui lòng dùng Google Chrome.");
     } else {
         const recognition = new SpeechRecognition();
-        // Thiết lập ngôn ngữ là tiếng Anh Mỹ
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-
-        const recordBtn = document.getElementById('recordBtn');
-        const statusText = document.getElementById('statusText');
-        const targetText = document.getElementById('targetText').innerText;
-        const resultDiv = document.getElementById('resultDiv');
-        const userSpeechDisplay = document.getElementById('userSpeech');
-        const scoreDisplay = document.getElementById('scoreDisplay');
 
         recordBtn.addEventListener('click', () => {
             recognition.start();
             recordBtn.disabled = true;
             recordBtn.innerText = "Đang nghe...";
-            statusText.innerText = "Hãy bắt đầu nói...";
+            statusText.innerText = "Hãy bắt đầu đọc...";
             resultDiv.style.display = "none";
         });
 
-        // Xử lý khi có kết quả trả về
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
-            userSpeechDisplay.innerText = transcript;
+            userSpeechDisplay.innerText = `"${transcript}"`;
             
-            // Tính điểm
-            const score = calculateScore(targetText, transcript);
+            // Lấy câu gốc hiện tại ra chấm điểm
+            const currentTarget = exercises[currentIndex];
+            const score = calculateScore(currentTarget, transcript);
+            
             scoreDisplay.innerText = score + "/100 Điểm";
             
-            if(score >= 80) {
-                scoreDisplay.style.color = "#27ae60"; // Xanh lá nếu điểm cao
-            } else {
-                scoreDisplay.style.color = "#e74c3c"; // Đỏ nếu điểm thấp
-            }
+            if(score >= 80) scoreDisplay.style.color = "#27ae60"; // Xanh lá
+            else if (score >= 50) scoreDisplay.style.color = "#f39c12"; // Cam
+            else scoreDisplay.style.color = "#e74c3c"; // Đỏ
             
             resultDiv.style.display = "block";
         };
@@ -127,31 +218,33 @@
         };
 
         recognition.onerror = (event) => {
-            statusText.innerText = "Lỗi nhận diện: " + event.error;
+            statusText.innerText = "Lỗi: " + event.error;
             resetButton();
         };
 
         function resetButton() {
             recordBtn.disabled = false;
-            recordBtn.innerText = "Bắt đầu Ghi âm";
+            recordBtn.innerText = "🎙️ Ghi âm lại";
             statusText.innerText = "Sẵn sàng";
         }
 
-        // Thuật toán chấm điểm cơ bản: So sánh số từ khớp nhau
+        // Thuật toán chấm điểm đã tối ưu hóa
         function calculateScore(target, spoken) {
-            // Chuẩn hóa chuỗi (chuyển chữ thường, xóa dấu câu)
-            const cleanTarget = target.toLowerCase().replace(/[.,!?]/g, '').split(' ');
-            const cleanSpoken = spoken.toLowerCase().replace(/[.,!?]/g, '').split(' ');
+            const cleanTarget = target.toLowerCase().replace(/[.,!?]/g, '').trim().split(/\s+/);
+            const cleanSpoken = spoken.toLowerCase().replace(/[.,!?]/g, '').trim().split(/\s+/);
 
             let matchCount = 0;
+            let spokenCopy = [...cleanSpoken];
+
             cleanTarget.forEach(word => {
-                if (cleanSpoken.includes(word)) {
+                const index = spokenCopy.indexOf(word);
+                if (index !== -1) {
                     matchCount++;
+                    spokenCopy.splice(index, 1); 
                 }
             });
 
             const rawScore = (matchCount / cleanTarget.length) * 100;
-            // Trả về số tròn, giới hạn tối đa 100
             return Math.min(Math.round(rawScore), 100);
         }
     }
